@@ -11,6 +11,7 @@ class TextType(Enum):
     IMAGE = "img"
 
 
+
 class TextNode():
     def __init__(self,TEXT, TEXT_TYPE, URL=None):
         if not isinstance(TEXT_TYPE, TextType):
@@ -28,7 +29,29 @@ class TextNode():
     
     def __hash__(self):
         return hash((self.text, self.text_type, self.url))
+
+    def __len__(self):
+        return len(self.text)
     
     @staticmethod
     def is_valid_text_type(text_type):
         return isinstance(text_type, TextType)
+    
+    @staticmethod
+    def get_markdown_for_text_type(text_type) -> str:
+        match text_type:
+            case TextType.BOLD:
+                return "**"
+            case TextType.ITALIC:
+                return "*"
+            case TextType.UNDERLINE:
+                return "__"
+            case TextType.STRIKETHROUGH:
+                return "~~"
+            case TextType.CODE:
+                return "`"
+            case TextType.LINK:
+                return "["
+            case TextType.IMAGE:
+                return "!"
+            
