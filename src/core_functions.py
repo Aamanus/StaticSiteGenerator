@@ -2,7 +2,8 @@ from typing import List
 import re
 from textnode import *
 from htmlnode import *
-
+import os
+import shutil
 
 def text_to_textnodes(text):
     out_nodes=[TextNode(text,TextType.TEXT)]
@@ -118,3 +119,89 @@ def extract_markdown_images(text):
 def extract_markdown_links(text):
     return re.findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)",text)
 
+block_type_paragraph = "paragraph"
+block_type_heading = "heading"
+block_type_code = "code"
+block_type_quote = "quote"
+block_type_olist = "ordered_list"
+block_type_ulist = "unordered_list"
+
+
+def markdown_to_blocks(markdown):
+    blocks = markdown.split("\n\n")
+    filtered_blocks = []
+    for block in blocks:
+        if block == "":
+            continue
+        block = block.strip()
+        filtered_blocks.append(block)
+    return filtered_blocks
+
+
+def block_to_block_type(block):
+    lines = block.split("\n")
+
+    if block.startswith(("# ", "## ", "### ", "#### ", "##### ", "###### ")):
+        return block_type_heading
+    if len(lines) > 1 and lines[0].startswith("```") and lines[-1].startswith("```"):
+        return block_type_code
+    if block.startswith(">"):
+        for line in lines:
+            if not line.startswith(">"):
+                return block_type_paragraph
+        return block_type_quote
+    if block.startswith("* "):
+        for line in lines:
+            if not line.startswith("* "):
+                return block_type_paragraph
+        return block_type_ulist
+    if block.startswith("- "):
+        for line in lines:
+            if not line.startswith("- "):
+                return block_type_paragraph
+        return block_type_ulist
+    if block.startswith("1. "):
+        i = 1
+        for line in lines:
+            if not line.startswith(f"{i}. "):
+                return block_type_paragraph
+            i += 1
+        return block_type_olist
+    return block_type_paragraph
+
+
+def copy_directory(src, dst):
+    """
+    Recursively copies all files and folders from the source directory to the destination directory
+    after deleting all existing files and folders in the destination directory.
+
+    :param src: Source directory path
+    :param dst: Destination directory path
+    """
+    # Check if the source directory exists
+    if not os.path.exists(src):
+        print(f"Source directory '{src}' does not exist.")
+        return
+
+    # Remove the destination directory if it exists
+    if os.path.exists(dst):
+        shutil.rmtree(dst)  # Remove the entire directory tree
+
+    # Create the destination directory
+    os.makedirs(dst)
+
+    # Iterate over the items in the source directory
+    for item in os.listdir(src):
+        # Create full path to the item
+        s = os.path.join(src, item)
+        d = os.path.join(dst, item)
+
+        # If the item is a directory, recursively copy it
+        if os.path.isdir(s):
+            copy_directory(s, d)
+        else:
+            # If the item is a file, copy it
+            shutil.copy2(s, d)  # Use copy2 to preserve metadata
+
+# Example usage
+# copy_directory('path/to/source', 'path/to/destination')
