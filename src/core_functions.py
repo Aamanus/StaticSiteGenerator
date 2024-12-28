@@ -205,3 +205,83 @@ def copy_directory(src, dst):
 
 # Example usage
 # copy_directory('path/to/source', 'path/to/destination')
+
+def extract_title(markdown):
+    if len(markdown) == 0:
+        raise Exception("Markdown is empty!")
+    
+    lines = markdown.split('\n')
+    title = ''
+    for line in lines:
+        if line.startswith('#'):
+            title = line.replace("#","")
+            title = title.strip()
+            return title
+    raise Exception("No title was found")
+
+def generate_page(from_path, template_path, dest_path):
+    print(f"Generating page from {from_path} to {dest_path} using {template_path}")
+
+    markdown_file = open(from_path)
+    template_file = open(template_path)
+    markdown = markdown_file.read()
+    template = template_file.read()
+    markdown_file.close()
+    template_file.close()
+    title = extract_title(markdown)
+    
+    html = markdown_to_html_node(markdown)
+    html_string = html.to_html()
+    print(title)
+    page = template.replace('{{ title }}', title).replace('{{ content }}', html_string)
+    with open(dest_path, 'w') as f:
+        f.write(page)
+        print(f"Page generated successfully!")
+        f.close()
+    
+    return True
+
+
+
+
+def markdown_to_html_node(markdown):
+    # Step 1: Split the markdown into blocks
+    blocks = markdown_to_blocks(markdown)
+    
+    # Step 2: Create a parent HTMLNode (a div)
+    parent_node = HTMLNode("div", "", [])  # Assuming HTMLNode takes tag, text, and children
+
+    # Step 3: Loop over each block
+    for block in blocks:
+        # Step 4: Determine the type of block
+        block_type = block_to_block_type(block)
+        
+        # Step 5: Create a new HTMLNode based on the block type
+        if block_type == block_type_paragraph:
+            block_node = HTMLNode("p", "", text_to_children(block))
+        elif block_type == block_type_heading:
+            level = block.count('#')  # Count the number of '#' to determine heading level
+            block_node = HTMLNode(f"h{level}", "", text_to_children(block))
+        elif block_type == block_type_code:
+            block_node = HTMLNode("pre", "", text_to_children(block))
+        elif block_type == block_type_quote:
+            block_node = HTMLNode("blockquote", "", text_to_children(block))
+        elif block_type == block_type_olist:
+            block_node = HTMLNode("ol", "", text_to_children(block))
+        elif block_type == block_type_ulist:
+            block_node = HTMLNode("ul", "", text_to_children(block))
+        else:
+            # Default to paragraph if block type is not recognized
+            block_node = HTMLNode("p", "", text_to_children(block))
+
+        # Step 6: Append the block node to the parent node
+        parent_node.children.append(block_node)
+
+    # Step 7: Return the parent HTMLNode
+    return parent_node
+
+def text_to_children(text):
+    # This function should convert the text into a list of HTMLNode objects
+    # For example, it could use the text_to_textnodes function to create TextNodes
+    text_nodes = text_to_textnodes(text)
+    return [text_node_to_html_node(node) for node in text_nodes]
